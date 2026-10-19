@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"helm.sh/helm/v3/pkg/registry"
+	"helm.sh/helm/v4/pkg/registry"
 
 	"github.com/sstarcher/helm-exporter/versioning"
 )

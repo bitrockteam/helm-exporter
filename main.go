@@ -24,8 +24,9 @@ import (
 	// Import to initialize client auth plugins.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v4/pkg/action"
+	"helm.sh/helm/v4/pkg/cli"
+	release "helm.sh/helm/v4/pkg/release/v1"
 
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
@@ -188,7 +189,11 @@ func runStats(config config.Config, info, history, timestamp, outdated *promethe
 			continue
 		}
 
-		for _, item := range items {
+		for _, itemRaw := range items {
+			item, ok := itemRaw.(*release.Release)
+			if !ok {
+				continue
+			}
 			chart := item.Chart.Name()
 			releaseName := item.Name
 			version := item.Chart.Metadata.Version
@@ -209,7 +214,11 @@ func runStats(config config.Config, info, history, timestamp, outdated *promethe
 					continue
 				}
 
-				for _, helmRelease := range helmReleases {
+				for _, helmReleaseRaw := range helmReleases {
+					helmRelease, ok := helmReleaseRaw.(*release.Release)
+					if !ok {
+						continue
+					}
 					historyChart := helmRelease.Chart.Name()
 					historyReleaseName := helmRelease.Name
 					historyVersion := helmRelease.Chart.Metadata.Version
@@ -349,7 +358,7 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 
 func connect(namespace string) {
 	actionConfig := new(action.Configuration)
-	err := actionConfig.Init(settings.RESTClientGetter(), namespace, os.Getenv("HELM_DRIVER"), log.Infof)
+	err := actionConfig.Init(settings.RESTClientGetter(), namespace, os.Getenv("HELM_DRIVER"))
 	if err != nil {
 		log.Warnf("failed to connect to %s with %v", namespace, err)
 	} else {
@@ -360,7 +369,7 @@ func connect(namespace string) {
 
 func informer() {
 	actionConfig := new(action.Configuration)
-	err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), os.Getenv("HELM_DRIVER"), log.Infof)
+	err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), os.Getenv("HELM_DRIVER"))
 	if err != nil {
 		log.Fatal(err)
 	}
